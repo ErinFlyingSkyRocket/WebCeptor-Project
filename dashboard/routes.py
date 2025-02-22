@@ -293,7 +293,7 @@ def receive_data():
     """Receives intercepted request data from MITM Proxy."""
     try:
         data = request.json
-        print(f"[DEBUG] Received data: {data}")
+        #print(f"[DEBUG] Received data: {data}")
 
         new_entry = InterceptedData(
             device_id=data.get("device_id"),
@@ -308,14 +308,14 @@ def receive_data():
 
         db.session.add(new_entry)
         db.session.commit()
-        socketio.emit("update_data", {"message": "New data received"})
-
-        return jsonify({"status": "success", "message": "Data received"}), 200
+        return '', 204  # No content response to avoid unnecessary logging
+        #socketio.emit("update_data", {"message": "New data received"})
+        #return jsonify({"status": "success", "message": "Data received"}), 200
 
     except Exception as e:
-        print(f"[ERROR] Failed to insert data: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 400
-
+        return '', 400  # Silent failure response
+        #print(f"[ERROR] Failed to insert data: {e}")
+        #return jsonify({"status": "error", "message": str(e)}), 400
 
 search_bp = Blueprint("search", __name__, url_prefix="/search")
 

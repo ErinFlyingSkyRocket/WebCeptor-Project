@@ -7,7 +7,9 @@ from pathlib import Path
 
 # Configuration
 MITM_SCRIPT = "mitm_interceptor.py"
-SERVER_URL = "http://127.0.0.1:9090/intercepted"
+SERVER_URL = "http://20.2.35.10:9090/intercepted" # Web Server
+#SERVER_URL = "http://127.0.0.1:9090/intercepted" # localhost
+
 
 # Get the correct path when running as an .exe
 if getattr(sys, 'frozen', False):
