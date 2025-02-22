@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Intercepted Data</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self';">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Live Intercepted Data</h1>
+        <ul id="data-list"></ul>
+    </div>
+
+    <script>
+        const socket = io("wss://127.0.0.1:9090", { transports: ["websocket"] });
+
+        function fetchLogs() {
+            fetch("/logs", { credentials: "include" })  // Fetch logs with authentication
+                .then(res => res.json())
+                .then(data => updateUI(data))
+                .catch(err => console.error("Error fetching logs:", err));
+        }
+
+        function updateUI(data) {
+            const list = document.getElementById("data-list");
+            list.innerHTML = "";
+            data.slice(-10).forEach(entry => {
+                const item = document.createElement("li");
+                item.innerHTML = `<strong>URL:</strong> ${entry.url} <br>
+                                  <strong>Method:</strong> ${entry.method} <br>
+                                  <strong>Status:</strong> ${entry.response_status}`;
+                list.prepend(item);
+            });
+        }
+
+        fetchLogs();
+        socket.on("update_data", fetchLogs);
+    </script>
+</body>
+</html>

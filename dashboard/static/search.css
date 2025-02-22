@@ -1,0 +1,223 @@
+/* General Table Styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    padding: 10px;
+    border: 2px solid #000;
+    text-align: left;
+    vertical-align: top;
+}
+
+/* Header Styling */
+th {
+    background-color: #007bff;
+    color: white;
+    font-size: 16px;
+    text-align: center;
+}
+
+/* Table Cell Styling */
+td {
+    font-size: 14px;
+    max-width: 300px;
+    height: 4.5em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    position: relative;
+}
+
+/* Enable Expansion on Hover */
+td:hover {
+    white-space: normal;
+    word-wrap: break-word;
+    height: auto;
+    max-height: none;
+    background-color: #f8f9fa;
+    z-index: 10;
+    position: relative;
+    overflow: visible;
+    padding: 10px;
+}
+
+/* Scrollable Content for Large Data */
+.scrollable-content {
+    max-height: 4.5em;
+    overflow-y: hidden;
+    display: block;
+}
+
+/* Allow Scroll on Hover for Large Content */
+td:hover .scrollable-content {
+    overflow-y: auto;
+    max-height: 300px;
+    white-space: normal;
+    padding-right: 5px;
+}
+
+/* Style the Scrollbar for Better UX */
+.scrollable-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 4px;
+}
+
+.scrollable-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+/* FILTER SECTION */
+/* General Styling for Filter Container */
+.filter-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    max-width: 100%;
+}
+
+/* Organizing Filter Rows */
+.filter-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+/* Each filter group (label + input) */
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1; /* Makes sure they are evenly distributed */
+    min-width: 220px; /* Prevents filters from becoming too small */
+}
+
+/* Labels next to input fields */
+.filter-group label {
+    font-weight: bold;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+/* Input fields */
+.filter-group input {
+    padding: 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+    max-width: 250px;
+}
+
+/* Button Group */
+.button-group {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+/* Buttons */
+.filter-container button {
+    padding: 8px 12px;
+    font-size: 14px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.filter-container button:hover {
+    background-color: #0056b3;
+}
+
+/* Pagination Controls */
+.pagination {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.pagination button {
+    padding: 8px 12px;
+    font-size: 14px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.pagination button:hover {
+    background-color: #0056b3;
+}
+
+.pagination span {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 10px;
+}
+
+.action-buttons-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+
+.warning-text {
+    margin-top: 15px;
+    font-size: 14px;
+    color: red;
+}
+
+.largest-textbox {
+    width: 100%;
+    height: 200px; /* Increased height for visibility */
+    resize: vertical;
+}
+
+.large-textbox {
+    width: 100%;
+    height: 100px;
+    resize: vertical;
+}
+
+.medium-textbox {
+    width: 100%;
+    height: 80px;
+    resize: vertical;
+}
+
+.small-textbox {
+    width: 100%;
+    height: 40px;
+    resize: none;
+}
+
+.row {
+    display: flex;
+    gap: 10px;
+}
+
+.log-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}

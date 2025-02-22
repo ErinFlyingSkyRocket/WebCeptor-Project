@@ -1,0 +1,426 @@
+/* General Styles */
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+/* Dashboard Layout */
+.dashboard-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+/* Statistic Box */
+.stat-box {
+    width: 250px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out;
+    cursor: pointer;
+}
+
+.stat-box:hover {
+    transform: scale(1.05);
+}
+
+.stat-box h4 {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.stat-box p {
+    font-size: 22px;
+    font-weight: bold;
+    margin-top: 5px;
+    color: #007bff;
+}
+
+/* Logs Table */
+.logs-container {
+    margin-top: 20px;
+    width: 98%;
+    margin-left: auto;
+    margin-right: auto;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Table Container */
+.logs-table-container {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+/* Table Styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed; /* Ensures proper column spacing */
+    margin-top: 10px;
+}
+
+/* Table Header Styling */
+th {
+    background-color: #007bff;
+    color: white;
+    padding: 10px;
+    text-align: left;
+    font-size: 14px;
+    border: 1px solid #ddd;
+}
+
+/* Table Cell Styling */
+td {
+    padding: 8px;
+    border: 1px solid #ddd;
+    vertical-align: top;
+    word-wrap: break-word;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+/* Assign Proper Column Widths - Including Delete Button */
+th:nth-child(1), td:nth-child(1) { width: 10%; }  /* Received At */
+th:nth-child(2), td:nth-child(2) { width: 8%; }   /* Device ID */
+th:nth-child(3), td:nth-child(3) { width: 8%; }   /* Method */
+th:nth-child(4), td:nth-child(4) { width: 20%; }  /* URL */
+th:nth-child(5), td:nth-child(5) { width: 15%; }  /* Headers */
+th:nth-child(6), td:nth-child(6) { width: 10%; }  /* Cookies */
+th:nth-child(7), td:nth-child(7) { width: 10%; }  /* Query Params */
+th:nth-child(8), td:nth-child(8) { width: 10%; }  /* Request Body */
+th:nth-child(9), td:nth-child(9) { width: 10%; }  /* Response Body */
+th:nth-child(10), td:nth-child(10) { width: 10%; min-width: 80px; text-align: center; } /* Action Column (Delete Button) */
+
+/* Fix Text Overflow */
+.truncate {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Enable Scroll for Long Content */
+.scrollable {
+    overflow-y: auto;
+    text-overflow: ellipsis;
+}
+
+/* Prevent Row Wrapping */
+td .truncate, td .scrollable {
+    display: block;
+    max-width: 100%;
+}
+
+/* Expand Full Text on Hover */
+.truncate:hover, .scrollable:hover {
+    overflow: visible;
+    white-space: normal;
+    word-wrap: break-word;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 5px;
+    border-radius: 5px;
+    position: absolute;
+    z-index: 1000;
+    max-width: 400px;
+}
+
+/* Pagination */
+.pagination {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.pagination button {
+    padding: 5px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+.pagination button:disabled {
+    background: #cccccc;
+    cursor: not-allowed;
+}
+
+/* Navbar */
+.navbar {
+    background: #007bff;
+    padding: 10px 0;
+    color: white;
+    font-size: 18px;
+}
+
+.navbar a {
+    color: white;
+    text-decoration: none;
+    margin: 0 15px;
+}
+
+.navbar a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-container {
+        flex-direction: column;
+        align-items: center;
+    }
+    .stat-box {
+        width: 90%;
+    }
+    table {
+        font-size: 12px;
+    }
+    th, td {
+        padding: 6px;
+    }
+}
+
+/* Active Users Table Container */
+.active-users-container {
+    width: 300px;  /* Adjust width as needed */
+    max-height: 180px;
+    margin: 20px auto;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+/* Active Users Table Scrollable */
+.active-users-table-container {
+    max-height: 120px; /* Allows only 3 rows before scrolling */
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-top: 5px;
+}
+
+/* Table Styling */
+.active-users-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.active-users-table th, .active-users-table td {
+    padding: 6px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.active-users-table th {
+    background-color: #007bff;
+    color: white;
+}
+
+/* Scrollbar Styling */
+.active-users-table-container::-webkit-scrollbar {
+    width: 5px;
+}
+
+.active-users-table-container::-webkit-scrollbar-thumb {
+    background: #007bff;
+    border-radius: 5px;
+}
+
+/* Page Sections */
+.dashboard-section {
+    width: 90%;
+    margin: 20px auto;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Graphs Container */
+.graphs-container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+/* Graph Box */
+.graph-box {
+    width: 400px;
+    height: 300px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Make the Graphs Fit Well */
+.graph-box canvas {
+    width: 100% !important;
+    height: 250px !important;
+}
+
+/* Responsive Layout */
+@media (max-width: 768px) {
+    .graphs-container {
+        flex-direction: column;
+        align-items: center;
+    }
+    .graph-box {
+        width: 90%;
+    }
+}
+
+/* Table Containers */
+.offline-users-table-container, .unique-users-table-container {
+    width: 50%;
+    margin: auto;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+/* Table Styling */
+.offline-users-table, .unique-users-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.offline-users-table th, .unique-users-table th,
+.offline-users-table td, .unique-users-table td {
+    padding: 8px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+.offline-users-table th, .unique-users-table th {
+    background-color: #007bff;
+    color: white;
+}
+
+.offline-users-table-container {
+    width: 50%;
+    margin: auto;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+.offline-users-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.offline-users-table th, .offline-users-table td {
+    padding: 10px;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+.offline-users-table th {
+    background-color: #dc3545; /* Red header for offline users */
+    color: white;
+}
+
+.inspect-data-container {
+    width: 90%;
+    margin: 20px auto;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.copied-log-details {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.row {
+    display: flex;
+    gap: 15px;
+    justify-content: space-between;
+}
+
+.log-field {
+    display: flex;
+    flex-direction: column;
+}
+
+.log-field label {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+/* Short text fields for Received At, Device ID, Method */
+.short {
+    width: 30%;
+}
+
+.small-textbox {
+    width: 100%;
+    height: 40px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    resize: none;
+    background-color: #f9f9f9;
+}
+
+/* Medium text field for URL */
+.medium-textbox {
+    width: 100%;
+    height: 60px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    resize: none;
+    background-color: #f9f9f9;
+}
+
+/* Long text fields for Headers, Cookies, Query Params, Request Body, Response Body */
+.long {
+    width: 100%;
+}
+
+.large-textbox {
+    width: 100%;
+    height: 100px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    resize: none;
+    background-color: #f9f9f9;
+}

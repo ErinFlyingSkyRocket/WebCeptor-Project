@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Search - SOC Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='search.css') }}">
+</head>
+<body>
+    <div class="navbar">
+        <h2>Search Logs</h2>
+        <a href="{{ url_for('dashboard.dashboard_page') }}">Dashboard</a>
+        <a href="{{ url_for('auth.logout') }}">Logout</a>
+    </div>
+
+    <section class="dashboard-section">
+        <h3>Filter Logs</h3>
+        <!-- Filter Container -->
+        <form method="GET" action="{{ url_for('search.search_page') }}" class="filter-container">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="received_at_start">Start Date:</label>
+                    <input type="datetime-local" name="received_at_start" id="received_at_start"
+                        value="{{ request.args.get('received_at_start', '') }}">
+                </div>
+
+                <div class="filter-group">
+                    <label for="received_at_end">End Date:</label>
+                    <input type="datetime-local" name="received_at_end" id="received_at_end"
+                        value="{{ request.args.get('received_at_end', '') }}">
+                </div>
+            </div>
+
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="device_id">Device ID:</label>
+                    <input type="text" name="device_id" id="device_id" placeholder="Filter by Device ID"
+                        value="{{ request.args.get('device_id', '') }}">
+                </div>
+                <div class="filter-group">
+                    <label for="data_type">Method:</label>
+                    <input type="text" name="data_type" id="data_type" placeholder="Filter by Method"
+                        value="{{ request.args.get('data_type', '') }}">
+                </div>
+                <div class="filter-group">
+                    <label for="url">URL:</label>
+                    <input type="text" name="url" id="url" placeholder="Filter by URL"
+                        value="{{ request.args.get('url', '') }}">
+                </div>
+            </div>
+
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="headers">Headers:</label>
+                    <input type="text" name="headers" id="headers" placeholder="Filter by Headers"
+                        value="{{ request.args.get('headers', '') }}">
+                </div>
+                <div class="filter-group">
+                    <label for="cookies">Cookies:</label>
+                    <input type="text" name="cookies" id="cookies" placeholder="Filter by Cookies"
+                        value="{{ request.args.get('cookies', '') }}">
+                </div>
+                <div class="filter-group">
+                    <label for="query_params">Query Params:</label>
+                    <input type="text" name="query_params" id="query_params" placeholder="Filter by Query Params"
+                        value="{{ request.args.get('query_params', '') }}">
+                </div>
+            </div>
+
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="request_body">Request Body:</label>
+                    <input type="text" name="request_body" id="request_body" placeholder="Filter by Request Body"
+                        value="{{ request.args.get('request_body', '') }}">
+                </div>
+                <div class="filter-group">
+                    <label for="response_body">Response Body:</label>
+                    <input type="text" name="response_body" id="response_body" placeholder="Filter by Response Body"
+                        value="{{ request.args.get('response_body', '') }}">
+                </div>
+                <div class="filter-group">
+                    <label for="search_all">Search All Fields:</label>
+                    <input type="text" name="search_all" id="search_all" placeholder="Search across all fields"
+                        value="{{ request.args.get('search_all', '') }}">
+                </div>
+            </div>
+
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="match_case">Match Case Inputs:</label>
+                    <input type="checkbox" name="match_case" id="match_case"
+                           {% if request.args.get('match_case') == "true" %}checked{% endif %}>
+                </div>
+                <div class="filter-group">
+                    <input type="checkbox" name="logic" value="or" id="or-filter-checkbox"
+                        {% if request.args.get("logic") == "or" %}checked{% endif %}>
+                    <label for="or-filter-checkbox"> OR Logic on Filters</label>
+                </div>
+            </div>
+
+            <!-- Dynamic Filters Section -->
+            <h4>Dynamic Filters</h4>
+            <div id="dynamic-filters"></div>
+
+            <!-- Hidden Template for Adding New Filters -->
+            <div id="hidden-filter-template" style="display: none;">
+                <div class="filter-row">
+                    <select class="filter-field">
+                        <option value="device_id">Device ID</option>
+                        <option value="data_type">Method</option>
+                        <option value="url">URL</option>
+                        <option value="headers">Headers</option>
+                        <option value="cookies">Cookies</option>
+                        <option value="query_params">Query Params</option>
+                        <option value="request_body">Request Body</option>
+                        <option value="response_body">Response Body</option>
+                        <option value="received_at">Received At</option>
+                    </select>
+                    <input type="text" class="filter-input" placeholder="Enter filter value">
+                    <button type="button" class="remove-filter" onclick="removeFilter(this)">Remove</button>
+                </div>
+            </div>
+
+            <!-- Hidden Field to Store JSON Data -->
+            <input type="hidden" id="hiddenFilters" name="hiddenFilters" value="{{ request.args.get('hiddenFilters', '[]') }}">
+
+            <button type="button" onclick="addFilter()">+ Add Dynamic Filter</button>
+            <button type="submit">Apply Filters</button>
+            <a href="{{ url_for('search.search_page') }}"><button type="button">Clear Filters</button></a>
+        </form>
+
+
+        <!-- Pagination Container (Top) -->
+        <div class="pagination-container">
+            <!-- Go To Page Form -->
+            <form method="GET" action="{{ url_for('search.search_page') }}" class="page-jump-form">
+                <div class="filter-group">
+                    <label for="jump-page">Go to Page:</label>
+                    <input type="number" name="page" id="jump-page" min="1" max="{{ total_pages }}" placeholder="Enter page number" required>
+
+                    {% set filtered_args = request.args.copy() %}
+                    {% set _ = filtered_args.pop('page', None) %}
+
+                    <!-- Preserve all filters except 'page' -->
+                    {% for key, value in filtered_args.items() %}
+                        <input type="hidden" name="{{ key }}" value="{{ value }}">
+                    {% endfor %}
+
+                    <button type="submit">Go</button>
+                </div>
+            </form>
+
+            <div class="action-buttons-container">
+                <div class="action-buttons">
+                    <button type="button" onclick="refreshLogs()">Refresh/Load Latest Data</button>
+                </div>
+            </div>
+
+            <!-- Pagination Buttons -->
+            <div class="pagination">
+                {% set filtered_args = request.args.copy() %}
+                {% set _ = filtered_args.pop('page', None) %}
+
+                <!-- First Page -->
+                <a href="{{ url_for('search.search_page', page=1, **filtered_args) }}">
+                    <button>««</button>
+                </a>
+
+                <!-- Previous Page -->
+                <a href="{{ url_for('search.search_page', page=(page-1 if page > 1 else 1), **filtered_args) }}">
+                    <button>«</button>
+                </a>
+
+                <span class="current-page">Page {{ page }} of {{ total_pages }}</span>
+
+                <!-- Next Page -->
+                <a href="{{ url_for('search.search_page', page=(page+1 if page < total_pages else total_pages), **filtered_args) }}">
+                    <button>»</button>
+                </a>
+
+                <!-- Last Page -->
+                <a href="{{ url_for('search.search_page', page=total_pages, **filtered_args) }}">
+                    <button>»»</button>
+                </a>
+            </div>
+        </div>
+
+        <!-- Logs Table -->
+        <div class="logs-table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Received At</th><th>Device ID</th><th>Method</th><th>URL</th>
+                        <th>Headers</th><th>Cookies</th><th>Query Params</th><th>Request Body</th><th>Response Body</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-table-body">
+                    {% for log in logs %}
+                    <tr id="log-row-{{ log.id }}">
+                        <td class="hover-expand">{{ log.received_at }}</td>
+                        <td class="hover-expand">{{ log.device_id }}</td>
+                        <td class="hover-expand">{{ log.data_type }}</td>
+                        <td class="hover-expand">{{ log.url }}</td>
+                        <td class="hover-expand">{{ log.headers }}</td>
+                        <td class="hover-expand">{{ log.cookies }}</td>
+                        <td class="hover-expand">{{ log.query_params }}</td>
+                        <td class="hover-expand">{{ log.request_body }}</td>
+                        <td class="hover-expand">{{ log.response_body }}</td>
+                        <td>
+                            <button class="copy-log-button" onclick="copyLogDetails('{{ log.id }}')">Copy</button>
+                            <button class="delete-log-button" onclick="deleteLog('{{ log.id }}')">Delete</button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="11">No results found.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Container (Bottom) -->
+        <div class="pagination-container">
+            <div class="pagination">
+                <a href="{{ url_for('search.search_page', page=1, **filters) }}">
+                    <button>««</button>
+                </a>
+                <a href="{{ url_for('search.search_page', page=page-1 if page > 1 else 1, **filters) }}">
+                    <button>«</button>
+                </a>
+
+                <span class="current-page">Page {{ page }} of {{ total_pages }}</span>
+
+                <a href="{{ url_for('search.search_page', page=page+1 if page < total_pages else total_pages, **filters) }}">
+                    <button>»</button>
+                </a>
+                <a href="{{ url_for('search.search_page', page=total_pages, **filters) }}">
+                    <button>»»</button>
+                </a>
+            </div>
+        </div>
+
+
+        <!-- Clear Logs Button -->
+        <div class="clear-logs-container">
+            <button class="clear-logs-button" onclick="confirmClearLogs()">Clear Logs</button>
+        </div>
+
+        <!-- Move the download buttons below the clear logs button -->
+        <div class="download-buttons-container">
+            <button class="download-csv-button" onclick="downloadCSV()">Download All Logs</button>
+            <button class="download-filtered-csv-button" onclick="downloadFilteredCSV()">Download Filtered Logs</button>
+        </div>
+    </section>
+
+    <!-- Inspect Copied Data Section with Structured Fields -->
+    <div class="inspect-data-container">
+        <h3>Inspect Copied Data</h3>
+
+        <div class="copied-log-details">
+            <div class="row">
+                <div class="log-field short">
+                    <label for="log-received-at">Received At:</label>
+                    <textarea id="log-received-at" class="small-textbox" readonly></textarea>
+                </div>
+
+                <div class="log-field short">
+                    <label for="log-device-id">Device ID:</label>
+                    <textarea id="log-device-id" class="small-textbox" readonly></textarea>
+                </div>
+
+                <div class="log-field short">
+                    <label for="log-method">Method:</label>
+                    <textarea id="log-method" class="small-textbox" readonly></textarea>
+                </div>
+            </div>
+
+            <div class="log-field long">
+                <label for="log-url">URL:</label>
+                <textarea id="log-url" class="medium-textbox" readonly></textarea>
+            </div>
+
+            <!-- Headers, Cookies, and Query Params in One Row -->
+            <div class="row">
+                <div class="log-field long">
+                    <label for="log-headers">Headers:</label>
+                    <textarea id="log-headers" class="large-textbox" readonly></textarea>
+                </div>
+
+                <div class="log-field long">
+                    <label for="log-cookies">Cookies:</label>
+                    <textarea id="log-cookies" class="large-textbox" readonly></textarea>
+                </div>
+
+                <div class="log-field long">
+                    <label for="log-query-params">Query Params:</label>
+                    <textarea id="log-query-params" class="large-textbox" readonly></textarea>
+                </div>
+            </div>
+
+            <!-- Request Body and Response Body in the same row, both large -->
+            <div class="row">
+                <div class="log-field full">
+                    <label for="log-request-body">Request Body:</label>
+                    <textarea id="log-request-body" class="largest-textbox" readonly></textarea>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="log-field full">
+                    <label for="log-response-body">Response Body:</label>
+                    <textarea id="log-response-body" class="largest-textbox" readonly></textarea>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="clearInspectData()">Clear</button>
+    </div>
+
+
+</body>
+
+
+<script>
+    function applyFilters() {
+        let searchAllFilter = document.querySelector("[name='search_all']").value;
+        let matchCase = document.querySelector("[name='match_case']").checked;
+
+        let receivedAtFilter = document.querySelector("[name='received_at']").value;
+        let deviceIdFilter = document.querySelector("[name='device_id']").value;
+        let methodFilter = document.querySelector("[name='data_type']").value;
+        let urlFilter = document.querySelector("[name='url']").value;
+        let headersFilter = document.querySelector("[name='headers']").value;
+        let cookiesFilter = document.querySelector("[name='cookies']").value;
+        let queryParamsFilter = document.querySelector("[name='query_params']").value;
+        let requestBodyFilter = document.querySelector("[name='request_body']").value;
+        let responseBodyFilter = document.querySelector("[name='response_body']").value;
+
+        let rows = document.querySelectorAll("#logs-table-body tr");
+
+        rows.forEach(row => {
+            let cells = row.getElementsByTagName("td");
+
+            if (cells.length > 0) {
+                let rowData = Array.from(cells).map(cell => cell.textContent).join(" "); // Combine all fields in a row
+
+                let receivedAt = cells[0].textContent;
+                let deviceId = cells[1].textContent;
+                let method = cells[2].textContent;
+                let url = cells[3].textContent;
+                let headers = cells[4].textContent;
+                let cookies = cells[5].textContent;
+                let queryParams = cells[6].textContent;
+                let requestBody = cells[7].textContent;
+                let responseBody = cells[8].textContent;
+
+                // Apply case sensitivity only if Match Case is unchecked
+                if (!matchCase) {
+                    rowData = rowData.toLowerCase();
+                    receivedAt = receivedAt.toLowerCase();
+                    deviceId = deviceId.toLowerCase();
+                    method = method.toLowerCase();
+                    url = url.toLowerCase();
+                    headers = headers.toLowerCase();
+                    cookies = cookies.toLowerCase();
+                    queryParams = queryParams.toLowerCase();
+                    requestBody = requestBody.toLowerCase();
+                    responseBody = responseBody.toLowerCase();
+
+                    searchAllFilter = searchAllFilter.toLowerCase();
+                    receivedAtFilter = receivedAtFilter.toLowerCase();
+                    deviceIdFilter = deviceIdFilter.toLowerCase();
+                    methodFilter = methodFilter.toLowerCase();
+                    urlFilter = urlFilter.toLowerCase();
+                    headersFilter = headersFilter.toLowerCase();
+                    cookiesFilter = cookiesFilter.toLowerCase();
+                    queryParamsFilter = queryParamsFilter.toLowerCase();
+                    requestBodyFilter = requestBodyFilter.toLowerCase();
+                    responseBodyFilter = responseBodyFilter.toLowerCase();
+                }
+
+                let matchesSearchAll = searchAllFilter === "" || rowData.includes(searchAllFilter);
+
+                if (
+                    matchesSearchAll &&
+                    (receivedAt.includes(receivedAtFilter) || receivedAtFilter === "") &&
+                    (deviceId.includes(deviceIdFilter) || deviceIdFilter === "") &&
+                    (method.includes(methodFilter) || methodFilter === "") &&
+                    (url.includes(urlFilter) || urlFilter === "") &&
+                    (headers.includes(headersFilter) || headersFilter === "") &&
+                    (cookies.includes(cookiesFilter) || cookiesFilter === "") &&
+                    (queryParams.includes(queryParamsFilter) || queryParamsFilter === "") &&
+                    (requestBody.includes(requestBodyFilter) || requestBodyFilter === "") &&
+                    (responseBody.includes(responseBodyFilter) || responseBodyFilter === "")
+                ) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        restoreDynamicFiltersFromURL();
+        restoreDynamicFilters();
+
+        document.querySelector(".filter-container").addEventListener("submit", function(event) {
+            updateHiddenFilters();
+        });
+    });
+
+    function restoreDynamicFiltersFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const dynamicFiltersParam = urlParams.get("dynamicFilters");
+
+        if (dynamicFiltersParam) {
+            try {
+                const dynamicFilters = JSON.parse(decodeURIComponent(dynamicFiltersParam));
+
+                // **Clear existing dynamic filters before adding new ones**
+                document.getElementById("dynamic-filters").innerHTML = "";
+
+                dynamicFilters.forEach(filter => {
+                    addFilter(filter.field, filter.value);
+                });
+
+            } catch (error) {
+                console.error("Error parsing dynamicFilters:", error);
+            }
+        }
+    }
+
+
+    function restoreDynamicFilters() {
+        let storedFilters = document.getElementById("hiddenFilters").value;
+
+        if (storedFilters && storedFilters !== "[]") {
+            try {
+                let filters = JSON.parse(storedFilters);
+
+                // **Prevent duplicate filters**
+                let existingFilters = new Set();
+
+                document.querySelectorAll("#dynamic-filters .filter-row").forEach(row => {
+                    const field = row.querySelector(".filter-field").value;
+                    const value = row.querySelector(".filter-input").value.trim();
+                    existingFilters.add(field + ":" + value);
+                });
+
+                filters.forEach(filter => {
+                    if (!existingFilters.has(filter.field + ":" + filter.value)) {
+                        addFilter(filter.field, filter.value);
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error parsing hiddenFilters:", error);
+            }
+        }
+    }
+
+
+    function addFilter(field = "", value = "") {
+        const container = document.getElementById("dynamic-filters");
+        const hiddenTemplate = document.getElementById("hidden-filter-template");
+
+        const newFilter = hiddenTemplate.cloneNode(true);
+        newFilter.style.display = "flex";
+        newFilter.removeAttribute("id");
+
+        newFilter.querySelector(".filter-field").value = field;
+        newFilter.querySelector(".filter-input").value = value;
+
+        container.appendChild(newFilter);
+        updateHiddenFilters();
+    }
+
+
+
+    function removeFilter(button) {
+        button.parentElement.remove();
+        updateHiddenFilters();
+    }
+
+
+    function updateHiddenFilters() {
+        const filters = [];
+        document.querySelectorAll("#dynamic-filters .filter-row").forEach(row => {
+            const field = row.querySelector(".filter-field").value;
+            const value = row.querySelector(".filter-input").value.trim();
+            if (value) {
+                filters.push({ field, value });
+            }
+        });
+
+        document.getElementById("hiddenFilters").value = JSON.stringify(filters);
+    }
+
+    function resetFilters() {
+        document.querySelectorAll(".filter-container input").forEach(input => input.value = "");
+        applyFilters(); // Reapply filters to show all rows again
+    }
+
+    function confirmClearLogs() {
+        if (confirm("Are you sure you want to clear the entire database? This action cannot be undone!")) {
+            fetch("{{ url_for('dashboard.clear_logs') }}", { // Fixed here
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                location.reload(); // Reload page to reflect changes
+            })
+            .catch(error => console.error("Error clearing logs:", error));
+        }
+    }
+
+    function refreshLogs() {
+        // Get current page number from the input or use 1 if not available
+        let currentPage = document.getElementById("jump-page")?.value || "{{ page }}";
+
+        // Preserve existing filters in the request
+        let filters = new URLSearchParams(window.location.search);
+        filters.set("page", currentPage); // Ensure the current page is included
+
+        fetch("{{ url_for('search.search_page') }}?" + filters.toString(), {
+            method: "GET",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest" // Ensure it's an AJAX request
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.logs && data.logs.length > 0) {
+                updateLogsTable(data.logs);
+                document.querySelector(".current-page").innerText = `Page ${data.page} of ${data.total_pages}`;
+            } else {
+                document.getElementById("logs-table-body").innerHTML = "<tr><td colspan='9'>No new logs available.</td></tr>";
+            }
+        })
+        .catch(error => console.error("Error refreshing logs:", error));
+    }
+
+
+    function updateLogsTable(logs) {
+        let tableBody = document.getElementById("logs-table-body");
+        tableBody.innerHTML = ""; // Clear existing logs
+
+        logs.forEach(log => {
+            let row = document.createElement("tr");
+            row.id = `log-row-${log.id}`;
+
+            function formatValue(value, defaultValue = "N/A") {
+                return (value && value !== "{}" && value !== "None") ? value : defaultValue;
+            }
+
+            row.innerHTML = `
+                <td class="hover-expand">${formatValue(log.received_at)}</td>
+                <td class="hover-expand">${formatValue(log.device_id, "Unknown")}</td>
+                <td class="hover-expand">${formatValue(log.data_type, "Unknown")}</td>
+                <td class="hover-expand">${formatValue(log.url, "Unknown")}</td>
+                <td class="hover-expand">${formatValue(log.headers, "{}")}</td>
+                <td class="hover-expand">${formatValue(log.cookies, "{}")}</td>
+                <td class="hover-expand">${formatValue(log.query_params, "{}")}</td>
+                <td class="hover-expand">${formatValue(log.request_body, "{}")}</td>
+                <td class="hover-expand">${formatValue(log.response_body, "{}")}</td>
+                <td>
+                    <button class="delete-log-button" onclick="deleteLog('${log.id}')">Delete</button>
+                </td>
+            `;
+
+            tableBody.appendChild(row);
+        });
+    }
+
+    function applyFilters() {
+        let searchAllFilter = document.querySelector("[name='search_all']").value.toLowerCase();
+
+        let receivedAtFilter = document.querySelector("[name='received_at']").value.toLowerCase();
+        let deviceIdFilter = document.querySelector("[name='device_id']").value.toLowerCase();
+        let methodFilter = document.querySelector("[name='data_type']").value.toLowerCase();
+        let urlFilter = document.querySelector("[name='url']").value.toLowerCase();
+        let headersFilter = document.querySelector("[name='headers']").value.toLowerCase();
+        let cookiesFilter = document.querySelector("[name='cookies']").value.toLowerCase();
+        let queryParamsFilter = document.querySelector("[name='query_params']").value.toLowerCase();
+        let requestBodyFilter = document.querySelector("[name='request_body']").value.toLowerCase();
+        let responseBodyFilter = document.querySelector("[name='response_body']").value.toLowerCase();
+
+        let rows = document.querySelectorAll("#logs-table-body tr");
+
+        rows.forEach(row => {
+            let cells = row.getElementsByTagName("td");
+
+            if (cells.length > 0) {
+                let rowData = Array.from(cells).map(cell => cell.textContent.toLowerCase()).join(" "); // Combine all fields in a row
+
+                let receivedAt = cells[0].textContent.toLowerCase();
+                let deviceId = cells[1].textContent.toLowerCase();
+                let method = cells[2].textContent.toLowerCase();
+                let url = cells[3].textContent.toLowerCase();
+                let headers = cells[4].textContent.toLowerCase();
+                let cookies = cells[5].textContent.toLowerCase();
+                let queryParams = cells[6].textContent.toLowerCase();
+                let requestBody = cells[7].textContent.toLowerCase();
+                let responseBody = cells[8].textContent.toLowerCase();
+
+                let matchesSearchAll = searchAllFilter === "" || rowData.includes(searchAllFilter);
+
+                if (
+                    matchesSearchAll &&
+                    (receivedAt.includes(receivedAtFilter) || receivedAtFilter === "") &&
+                    (deviceId.includes(deviceIdFilter) || deviceIdFilter === "") &&
+                    (method.includes(methodFilter) || methodFilter === "") &&
+                    (url.includes(urlFilter) || urlFilter === "") &&
+                    (headers.includes(headersFilter) || headersFilter === "") &&
+                    (cookies.includes(cookiesFilter) || cookiesFilter === "") &&
+                    (queryParams.includes(queryParamsFilter) || queryParamsFilter === "") &&
+                    (requestBody.includes(requestBodyFilter) || requestBodyFilter === "") &&
+                    (responseBody.includes(responseBodyFilter) || responseBodyFilter === "")
+                ) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            }
+        });
+    }
+
+    function fetchSearchResults() {
+        const filters = {};
+        document.querySelectorAll(".filter-container input, .filter-container select").forEach(input => {
+            if (input.type === "checkbox") {
+                filters[input.name] = input.checked ? "true" : "false";
+            } else if (input.value.trim() !== "") {
+                filters[input.name] = input.value.trim();
+            }
+        });
+
+        const useOrLogic = document.getElementById("or-filter-checkbox").checked;
+        if (useOrLogic) {
+            filters["logic"] = "or";
+        }
+
+        // Ensure OR logic persists in URL
+        const queryString = Object.entries(filters)
+            .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+            .join("&");
+
+        window.location.href = `/search/?${queryString}`;
+    }
+
+    function downloadCSV() {
+        window.location.href = "{{ url_for('search.download_csv') }}";
+    }
+
+    function downloadFilteredCSV() {
+        // Get current filters
+        let filters = new URLSearchParams(window.location.search);
+
+        // Ensure the user is downloading based on the current filters
+        window.location.href = "{{ url_for('search.download_filtered_csv') }}?" + filters.toString();
+    }
+
+    function deleteLog(logId) {
+        fetch(`/search/delete_log/${logId}`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === "success") {
+                location.reload(); // Refresh page to reflect changes
+            } else {
+                console.error("Error deleting log:", data.message);
+            }
+        })
+        .catch(error => console.error("Error deleting log:", error));
+    }
+
+    function copyLogDetails(logId) {
+        let row = document.getElementById(`log-row-${logId}`);
+        if (!row) return;
+
+        document.getElementById("log-received-at").value = row.cells[0].innerText.trim();
+        document.getElementById("log-device-id").value = row.cells[1].innerText.trim();
+        document.getElementById("log-method").value = row.cells[2].innerText.trim();
+        document.getElementById("log-url").value = row.cells[3].innerText.trim();
+        document.getElementById("log-headers").value = row.cells[4].innerText.trim();
+        document.getElementById("log-cookies").value = row.cells[5].innerText.trim();
+        document.getElementById("log-query-params").value = row.cells[6].innerText.trim();
+        document.getElementById("log-request-body").value = row.cells[7].innerText.trim();
+        document.getElementById("log-response-body").value = row.cells[8].innerText.trim();
+    }
+
+    function clearInspectData() {
+        document.querySelectorAll(".large-textbox").forEach(input => input.value = "");
+    }
+
+
+
+</script>
+
+</html>

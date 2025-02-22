@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>SOC Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+</head>
+<body>
+    <div class="navbar">
+        <h2>SOC Dashboard</h2>
+        <a href="{{ url_for('search.search_page') }}">Search</a>
+        <a href="{{ url_for('auth.logout') }}">Logout</a>
+    </div>
+
+    <!-- Section 1: Statistics Overview -->
+    <section class="dashboard-section">
+        <div class="dashboard-container">
+            <div class="stat-box"><h4>Total Captured Logs</h4><p id="total-captured">Loading...</p></div>
+            <div class="stat-box"><h4>Unique Users</h4><p id="unique-users">Loading...</p></div>
+
+            <div class="stat-box">
+                <h4>Active Users (Last 1 Hour)</h4>
+                <p id="active-users">Loading...</p>
+                <div class="active-users-table-container">
+                    <table class="active-users-table">
+                        <thead><tr><th>Device ID</th><th>Last Seen</th></tr></thead>
+                        <tbody id="active-users-table-body">
+                            <tr><td colspan="2">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="stat-box">
+                <h4>Offline Users</h4>
+                <p id="offline-users">Loading...</p>
+                <div class="offline-users-table-container">
+                    <table class="offline-users-table">
+                        <thead><tr><th>Device ID</th></tr></thead>
+                        <tbody id="offline-users-table-body">
+                            <tr><td>Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="stat-box">
+                <h4>Captured Credentials</h4>
+                <p><a href="#" id="captured-credentials">Loading...</a></p>
+            </div>
+
+            <div class="stat-box">
+                <h4>Potential Login Credentials</h4>
+                <p>
+                    <a id="potential-logins" href="javascript:void(0);" onclick="redirectToPotentialLogins()">Loading...</a>
+                </p>
+            </div>
+
+            <div class="stat-box">
+                <h4>Session Hijack Risks</h4>
+                <p>
+                    <a id="session-hijack" href="javascript:void(0);" onclick="redirectToSessionHijackLogs()">Loading...</a>
+                </p>
+            </div>
+
+            <div class="stat-box">
+                <h4>Detected HTTP Access</h4>
+                <p><a href="#" id="http-access-count">Loading...</a></p>
+            </div>
+
+            <div class="stat-box">
+                <h4>Possible Personal Data Captured</h4>
+                <p><a href="#" id="possible-personal-data">Loading...</a></p>
+            </div>
+
+            <div class="stat-box admin-box">
+                <h4>Admin Panel Logins Detected</h4>
+                <p><a href="#" id="admin-logins-detected">Loading...</a></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2: Graphs -->
+    <section class="dashboard-section">
+        <h3>Graphs & Trends</h3>
+        <div class="graphs-container">
+            <div class="graph-box">
+                <h4>Captured Logs (Last 7 Days)</h4>
+                <canvas id="logsChart"></canvas>
+            </div>
+            <div class="graph-box">
+                <h4>HTTP Request Methods</h4>
+                <canvas id="httpMethodsChart"></canvas>
+            </div>
+            <div class="graph-box">
+                <h4>Logs Time Frequency Past 7 Days (24 Hours)</h4>
+                <canvas id="logsPerHourChart"></canvas>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 3: Live Log Table -->
+    <section class="dashboard-section">
+        <h3>Latest 100 Logs</h3>
+        <input type="text" id="search-bar" placeholder="Search logs...">
+        <div class="pagination">
+            <button id="prev-page" disabled>Previous</button>
+            <span id="page-info">Page 1 of 10</span>
+            <button id="next-page">Next</button>
+        </div>
+        <div class="logs-table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Received At</th><th>Device ID</th><th>Method</th><th>URL</th>
+                        <th>Headers</th><th>Cookies</th><th>Query Params</th><th>Request Body</th><th>Response Body</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-table-body">
+                    <tr><td colspan="9">Loading logs...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</body>
+
+<script>
+    let logsData = [];
+    let currentPage = 1;
+    let logsChart;
+    let httpMethodsChart;
+    let logsPerHourChart;
+    const logsPerPage = 10;
+
+    const sensitiveKeywords = [
+        "username", "password", "user", "pwd", "pass", "email", "token", "auth", "session", "apikey", "jwt"
+    ];
+
+    const usernameKeywords = ["username", "user", "id", "login", "email", "uname"];
+    const passwordKeywords = ["password", "pass", "pwd", "passcode", "passphrase", "passwd"];
+
+    const sessionKeywords = ["session", "auth", "token", "jwt", "sid", "PHPSESSID"];
+
+    const adminKeywords = ["admin", "wp-admin", "dashboard", "superuser", "root", "manage", "control", "panel"];
+
+    const personalDataKeywords = [
+        "phone", "mobile", "contact", "email", "address", "location", "home", "city",
+        "state", "country", "zipcode", "postal", "social", "facebook", "instagram", "twitter", "linkedin"
+    ];
+
+    function fetchDashboardStats() {
+        fetch("/dashboard/stats")
+            .then(response => response.json())
+            .then(data => {
+                // Update Stats
+                document.getElementById("total-captured").textContent = data.total_captured;
+                document.getElementById("unique-users").textContent = data.unique_users;
+                document.getElementById("active-users").textContent = data.active_users;
+                document.getElementById("offline-users").textContent = data.offline_users;
+
+                // **Clickable Links for Quick Search**
+                document.getElementById("captured-credentials").innerHTML =
+                    `<a href="/search?request_body=${encodeURIComponent(sensitiveKeywords.join(" "))}" target="_blank">${data.captured_credentials}</a>`;
+
+                document.getElementById("potential-logins").innerHTML =
+                    `<a href="/search?request_body=${encodeURIComponent([...usernameKeywords, ...passwordKeywords].join(" "))}" target="_blank">${data.potential_logins}</a>`;
+
+                document.getElementById("session-hijack").innerHTML =
+                    `<a href="/search?cookies=${encodeURIComponent(sessionKeywords.join(" "))}&query_params=${encodeURIComponent(sessionKeywords.join(" "))}&response_body=${encodeURIComponent(sessionKeywords.join(" "))}" target="_blank">${data.session_hijack_opportunities}</a>`;
+
+                document.getElementById("admin-logins-detected").innerHTML =
+                    `<a href="/search?url=${encodeURIComponent(adminKeywords.join(" "))}" target="_blank">${data.admin_logins_detected}</a>`;
+
+                document.getElementById("possible-personal-data").innerHTML =
+                    `<a href="/search?request_body=${encodeURIComponent(personalDataKeywords.join(" "))}&query_params=${encodeURIComponent(personalDataKeywords.join(" "))}&headers=${encodeURIComponent(personalDataKeywords.join(" "))}" target="_blank">${data.possible_personal_data}</a>`;
+
+                document.getElementById("http-access-count").innerHTML =
+                    `<a href="/search?url=http://" target="_blank">${data.http_access_count}</a>`;
+
+                // ** Update Active Users Table **
+                const activeUsersTableBody = document.getElementById("active-users-table-body");
+                activeUsersTableBody.innerHTML = ""; // Clear old data
+
+                if (data.active_users_list.length > 0) {
+                    data.active_users_list.forEach(user => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `<td><a href="/search?device_id=${encodeURIComponent(user.device_id)}" class="device-link">${user.device_id}</a></td>
+                                         <td>${user.last_seen}</td>`;
+                        activeUsersTableBody.appendChild(row);
+                    });
+                } else {
+                    activeUsersTableBody.innerHTML = `<tr><td colspan="2">No active users</td></tr>`;
+                }
+
+                // Ensure at least 3 rows for UI consistency
+                let userCount = data.active_users_list.length;
+                while (userCount < 3) {
+                    const emptyRow = document.createElement("tr");
+                    emptyRow.innerHTML = `<td colspan="2"></td>`;
+                    activeUsersTableBody.appendChild(emptyRow);
+                    userCount++;
+                }
+
+                // ** Update Offline Users Table **
+                const offlineUsersTableBody = document.getElementById("offline-users-table-body");
+                offlineUsersTableBody.innerHTML = ""; // Clear old data
+
+                if (data.offline_users_list.length > 0) {
+                    data.offline_users_list.forEach(device_id => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `<td><a href="/search?device_id=${encodeURIComponent(device_id)}" class="device-link">${device_id}</a></td>`;
+                        offlineUsersTableBody.appendChild(row);
+                    });
+                } else {
+                    offlineUsersTableBody.innerHTML = `<tr><td>No offline users</td></tr>`;
+                }
+
+                attachDeviceClickHandlers();
+
+                // ** Update Graphs **
+                updateLogsChart(data.logs_per_day);
+                updateHttpMethodsChart(data.http_methods);
+                updateLogsPerHourChart(data.logs_by_hour);
+
+            })
+            .catch(error => console.error("Error fetching dashboard stats:", error));
+    }
+
+    function attachDeviceClickHandlers() {
+        document.querySelectorAll(".device-link").forEach(link => {
+            link.addEventListener("click", function (event) {
+                const deviceId = this.getAttribute("href").split("=")[1]; // Extract device ID
+
+                // Update the device filter field if present
+                const deviceIdInput = document.querySelector("[name='device_id']");
+                if (deviceIdInput) {
+                    event.preventDefault(); // Prevent default if input exists
+                    deviceIdInput.value = decodeURIComponent(deviceId);
+
+                    // Auto-submit form if a search filter form exists
+                    const searchForm = document.querySelector(".filter-container");
+                    if (searchForm) {
+                        searchForm.submit();
+                    }
+                } else {
+                    // Redirect to search page with device_id filter
+                    window.location.href = `/search?device_id=${decodeURIComponent(deviceId)}`;
+                }
+            });
+        });
+    }
+
+    // Ensure event handlers are attached after fetching data
+    setTimeout(attachDeviceClickHandlers, 1000);
+
+
+    function updateDeviceFilter(deviceId) {
+        const deviceIdInput = document.querySelector("[name='device_id']");
+        const searchForm = document.querySelector(".filter-container"); // Ensure this form exists
+
+        if (deviceIdInput) {
+            deviceIdInput.value = deviceId; // Set the clicked device ID
+        }
+
+        setTimeout(() => {
+            searchForm.submit(); // Auto-submit form after setting value
+        }, 300);
+    }
+
+
+
+    // Ensure pagination is correctly displayed when logs are fetched
+    function fetchLogs() {
+        fetch("/dashboard/logs")
+            .then(response => response.json())
+            .then(data => {
+                logsData = data;
+                currentPage = 1;
+                displayLogs();
+            });
+    }
+
+    function displayLogs() {
+        const tableBody = document.getElementById("logs-table-body");
+        tableBody.innerHTML = "";
+
+        const start = (currentPage - 1) * logsPerPage;
+        const end = start + logsPerPage;
+        const logsToShow = logsData.slice(start, end);
+
+        if (logsToShow.length > 0) {
+            logsToShow.forEach(log => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td class="truncate multi-line">${truncateText(log.received_at, 300)}</td>
+                    <td class="truncate multi-line">${truncateText(log.device_id, 300)}</td>
+                    <td class="truncate multi-line">${truncateText(log.method, 300)}</td>
+                    <td class="truncate multi-line">${truncateText(log.url, 300)}</td>
+                    <td class="truncate multi-line">${truncateText(log.headers, 300)}</td>
+                    <td class="truncate multi-line">${truncateText(log.cookies, 300)}</td>
+                    <td class="truncate multi-line">${truncateText(log.query_params, 300)}</td>
+                    <td class="truncate multi-line">${truncateText(log.request_body, 300)}</td>
+                    <td class="truncate multi-line">${truncateText(log.response_body, 300)}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        } else {
+            tableBody.innerHTML = `<tr><td colspan="9">No logs available.</td></tr>`;
+        }
+
+        updatePaginationControls();
+    }
+
+    function updatePaginationControls() {
+        const totalPages = Math.ceil(logsData.length / logsPerPage);
+        document.getElementById("page-info").textContent = `Page ${currentPage} of ${totalPages}`;
+        document.getElementById("prev-page").disabled = currentPage === 1;
+        document.getElementById("next-page").disabled = currentPage >= totalPages;
+    }
+
+    document.getElementById("prev-page").addEventListener("click", function () {
+        if (currentPage > 1) {
+            currentPage--;
+            displayLogs();
+        }
+    });
+
+    document.getElementById("next-page").addEventListener("click", function () {
+        const totalPages = Math.ceil(logsData.length / logsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            displayLogs();
+        }
+    });
+
+    function truncateText(text, maxLength) {
+        if (!text) return "";
+        return text.length > maxLength
+            ? `<span class="hover-expand" title="${text}">${text.slice(0, maxLength)}...</span>`
+            : text;
+    }
+
+    function searchLogs() {
+        let input = document.getElementById("search-bar").value.toLowerCase();
+        let rows = document.querySelectorAll("#logs-table-body tr");
+
+        rows.forEach(row => {
+            let text = row.textContent.toLowerCase();
+            row.style.display = text.includes(input) ? "" : "none";
+        });
+    }
+
+    function updateLogsChart(logData) {
+        const ctx = document.getElementById("logsChart").getContext("2d");
+
+        // ** Sort logData by date in ascending order **
+        logData.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        // Extract sorted dates and counts
+        const labels = logData.map(entry => entry.date);
+        const counts = logData.map(entry => entry.count);
+
+        if (logsChart) {
+            logsChart.destroy(); // Destroy existing chart before redrawing
+        }
+
+        logsChart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Logs Captured",
+                    data: counts,
+                    borderColor: "#007bff",
+                    backgroundColor: "rgba(0, 123, 255, 0.2)",
+                    borderWidth: 2,
+                    fill: true,
+                    pointRadius: 5, // Make points visible
+                    pointBackgroundColor: "#007bff"
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    datalabels: {
+                        align: "top",
+                        anchor: "end",
+                        color: "#000",
+                        font: { weight: "bold" },
+                        formatter: function(value) {
+                            return value; // Show actual numbers
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 5 // Adjust step size for better readability
+                        }
+                    }
+                }
+            },
+            plugins: [ChartDataLabels] // Enable data labels plugin
+        });
+    }
+
+    function updateHttpMethodsChart(methodData) {
+        const ctx = document.getElementById("httpMethodsChart").getContext("2d");
+
+        // Extract labels (GET, POST, etc.) and values
+        const labels = Object.keys(methodData);
+        const counts = Object.values(methodData);
+
+        if (httpMethodsChart) {
+            httpMethodsChart.destroy();  // Destroy old chart before redrawing
+        }
+
+        httpMethodsChart = new Chart(ctx, {
+            type: "pie",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "HTTP Methods",
+                    data: counts,
+                    backgroundColor: ["#007bff", "#28a745", "#dc3545", "#ffc107", "#17a2b8"],
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    datalabels: {
+                        color: "#fff",
+                        font: { weight: "bold" },
+                        formatter: function(value, context) {
+                            return context.chart.data.labels[context.dataIndex] + ": " + value;
+                        }
+                    }
+                }
+            },
+            plugins: [ChartDataLabels] // Enable data labels plugin
+        });
+    }
+
+    function updateLogsPerHourChart(logsByHourData) {
+        const ctx = document.getElementById("logsPerHourChart").getContext("2d");
+
+        let datasets = [];
+        let colors = ["#007bff", "#28a745", "#dc3545", "#ffc107", "#17a2b8", "#6c757d", "#343a40"]; // Different colors for 7 days
+
+        let dayIndex = 0;
+        for (const [date, hourlyData] of Object.entries(logsByHourData)) {
+            datasets.push({
+                label: date,  // Show the date as legend
+                data: hourlyData,
+                backgroundColor: colors[dayIndex % colors.length],
+                borderColor: colors[dayIndex % colors.length],
+                borderWidth: 1
+            });
+            dayIndex++;
+        }
+
+        if (logsPerHourChart) {
+            logsPerHourChart.destroy(); // Destroy old chart before redrawing
+        }
+
+        logsPerHourChart = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: Array.from({ length: 24 }, (_, i) => `${i}:00`), // X-axis: 24 hours
+                datasets: datasets  // Multiple datasets for each day
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { stacked: true },
+                    y: { beginAtZero: true, stacked: true }
+                },
+                plugins: {
+                    legend: { display: true, position: "top" }
+                }
+            }
+        });
+    }
+
+    function searchCapturedCredentials() {
+        const sensitiveKeywords = [
+            "username", "password", "user", "pwd", "pass",
+            "email", "token", "auth", "session", "apikey", "jwt"
+        ];
+
+        // Join all keywords into a single space-separated string
+        const query = encodeURIComponent(sensitiveKeywords.join(" "));
+
+        // Redirect to the search page with request_body filter
+        window.location.href = `/search/?request_body=${query}`;
+    }
+
+    function redirectToPotentialLogins() {
+        const usernameKeywords = ["username", "user", "id", "login", "email", "uname"];
+        const passwordKeywords = ["password", "pass", "pwd", "passcode", "passphrase", "passwd"];
+
+        // Prevent duplicate filters by clearing existing ones
+        const params = new URLSearchParams(window.location.search);
+        params.delete("dynamicFilters");
+
+        params.append("dynamicFilters", JSON.stringify([
+            { field: "request_body", value: usernameKeywords.join(" ") },
+            { field: "request_body", value: passwordKeywords.join(" ") }
+        ]));
+
+        window.location.href = "/search/?" + params.toString();
+    }
+
+    function redirectToSessionHijackLogs() {
+        const sessionKeywords = [
+            "PHPSESSID", "JSESSIONID", "connect.sid", "sessionid",
+            "access_token", "X-Auth-Token", "Bearer", "auth_token", "jwt"
+        ];
+
+        const safeSessionKeywords = [
+            "csrf_token", "xsrf_token", "ga_session", "analytics_session", "tracking_id"
+        ];
+
+        // Construct the search filter ensuring exact matches
+        const queryParams = new URLSearchParams();
+
+        queryParams.append("dynamicFilters", JSON.stringify([
+            { field: "cookies", value: sessionKeywords.join(" ") },
+            { field: "query_params", value: sessionKeywords.join(" ") },
+            { field: "response_body", value: sessionKeywords.join(" ") },
+            { field: "headers", value: "Authorization, Set-Cookie" }
+        ]));
+
+        // Add exclusion filters for safe session values
+        queryParams.append("excludeFilters", JSON.stringify([
+            { field: "cookies", value: safeSessionKeywords.join(" ") },
+            { field: "query_params", value: safeSessionKeywords.join(" ") },
+            { field: "response_body", value: safeSessionKeywords.join(" ") }
+        ]));
+
+        window.location.href = `/search/?${queryParams.toString()}`;
+    }
+
+
+    setInterval(() => {
+        fetchDashboardStats();
+        fetchLogs();
+    }, 5000);
+</script>
+</html>
