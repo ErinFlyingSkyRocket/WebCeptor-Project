@@ -13,7 +13,7 @@ WebCeptor is a Flask-based interception server designed to collect and analyze H
 ### Installation Steps
 1. **Clone the Repository**  
    ```
-   git clone <repository_url>
+   git clone https://github.com/ErinFlyingSkyRocket/WebCeptor-Project.git
    cd WebCeptor-Project
    ```
 
