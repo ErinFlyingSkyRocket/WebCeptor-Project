@@ -57,7 +57,7 @@ To capture traffic from a victim's machine, the victim application must be confi
 ### **Modifying the Victim Application**
 Before deploying `victim_app.py`, update its configuration:
 1. Open `victim_app.py` and `mitm_interceptor.py`, and change the target server IP to your WebCeptor server’s IP or domain.
-2. Customise the `DEVICe_ID` of your specified Victim at `mitm_interceptor.py`.
+2. Customise the `DEVICE_ID` of your specified Victim at `mitm_interceptor.py`.
 3. Deploy the script on the victim's machine.
 
 ## Notes
