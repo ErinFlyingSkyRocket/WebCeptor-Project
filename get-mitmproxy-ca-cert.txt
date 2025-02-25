@@ -1,0 +1,1 @@
+On client side, go http://mitm.it and download the CA specifically for each client.
