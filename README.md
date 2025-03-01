@@ -1,3 +1,6 @@
+
+
+cd dashboard
 # WebCeptor - Network Interception & Logging Server
 
 ## Overview
