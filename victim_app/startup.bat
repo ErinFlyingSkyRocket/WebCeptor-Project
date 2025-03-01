@@ -9,7 +9,7 @@ cd /d "%~dp0"
 start cmd /k mitmdump --mode regular@8080 --listen-host 127.0.0.1 --ssl-insecure -s mitm_interceptor.py
 
 :: Alternative: Start mitmdump as a background process (hidden window)
-:: Uncomment the following line if you want it to run silently in the background
-:: powershell -WindowStyle Hidden -Command "Start-Process 'mitmdump' -ArgumentList '--mode regular@8080 --listen-host 127.0.0.1 --ssl-insecure -s mitm_interceptor.py' -NoNewWindow -PassThru"
+:: Run mitmdump in the background with no visible window using WScript
+:: wscript.exe hidden_startup.vbs
 
 exit
