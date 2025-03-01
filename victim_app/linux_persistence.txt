@@ -1,0 +1,17 @@
+If you want mitmdump to start automatically on reboot, create a systemd service.
+Create Service File
+sudo nano /etc/systemd/system/mitmproxy.service
+
+Paste:
+[Unit]
+Description=MITMProxy Background Service
+After=network.target
+
+[Service]
+Type=simple
+User=erin  # Change to your Linux username
+ExecStart=/home/erin/WebCeptor-Project/victim_app/mitm_startup.sh
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
