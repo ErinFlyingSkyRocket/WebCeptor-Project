@@ -1,3 +1,6 @@
+Download:
+git clone https://github.com/ErinFlyingSkyRocket/WebCeptor-Project.git
+
 If you want mitmdump to start automatically on reboot, create a systemd service.
 Create Service File
 sudo nano /etc/systemd/system/mitmproxy.service
@@ -9,9 +12,10 @@ After=network.target
 
 [Service]
 Type=simple
-User=erin  # Change to your Linux username
+User=erin
+Group=erin
 WorkingDirectory=/home/erin/Downloads/WebCeptor-Project/victim_app
-ExecStart=/home/erin/Downloads/WebCeptor-Project/victim_app/mitm_startup.sh
+ExecStart=/bin/bash -c 'bash /home/erin/Downloads/WebCeptor-Project/victim_app/mitm_startup.sh'
 Restart=always
 
 [Install]
@@ -19,6 +23,8 @@ WantedBy=multi-user.target
 
 Make Bash folder executable:
 chmod +x /home/erin/Downloads/WebCeptor-Project/victim_app/mitm_startup.sh
+sudo chown erin:erin /home/erin/Downloads/WebCeptor-Project/victim_app/mitm_startup.sh
+
 
 Step 2: Enable & Start the Service
 sudo systemctl daemon-reload
