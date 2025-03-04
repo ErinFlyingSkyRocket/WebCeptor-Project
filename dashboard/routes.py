@@ -379,18 +379,20 @@ def search_page():
         except ValueError:
             pass
 
-    # Static filters processing (applies OR logic within each field)
+    # Static filters processing (Match case -> AND for +, OR otherwise)
     for field, value in filters.items():
         if hasattr(InterceptedData, field):
             column_attr = getattr(InterceptedData, field)
-            search_terms = value.split()
 
             if match_case:
+                search_terms = value.split("+")  # Split by + when match case is enabled (AND logic)
                 term_conditions = [func.cast(column_attr, db.Text).ilike(f"%{word}%") for word in search_terms]
+                conditions.append(and_(*term_conditions))  # Apply AND logic
             else:
-                term_conditions = [func.lower(func.cast(column_attr, db.Text)).ilike(f"%{word.lower()}%") for word in search_terms]
-
-            conditions.append(or_(*term_conditions))  # OR logic within input field
+                search_terms = value.split()  # Default space-separated (OR logic)
+                term_conditions = [func.lower(func.cast(column_attr, db.Text)).ilike(f"%{word.lower()}%") for word in
+                                   search_terms]
+                conditions.append(or_(*term_conditions))  # Apply OR logic
 
     # Dynamic filters processing
     for dynamic_filter in dynamic_filters:
@@ -451,7 +453,6 @@ def search_page():
         filters=filters,
         dynamic_filters=json.dumps(dynamic_filters)  # Pass dynamic filters back to the template
     )
-
 
 @search_bp.route("/download_csv", methods=["GET"])
 @login_required

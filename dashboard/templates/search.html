@@ -88,7 +88,7 @@
                 <div class="filter-group">
                     <label for="match_case">Match Case Inputs:</label>
                     <input type="checkbox" name="match_case" id="match_case"
-                           {% if request.args.get('match_case') == "true" %}checked{% endif %}>
+                        value="true" {% if request.args.get('match_case') == 'true' %}checked{% endif %}>
                 </div>
                 <div class="filter-group">
                     <input type="checkbox" name="logic" value="or" id="or-filter-checkbox"
@@ -220,20 +220,54 @@
 
         <!-- Pagination Container (Bottom) -->
         <div class="pagination-container">
+            <!-- Go To Page Form -->
+            <form method="GET" action="{{ url_for('search.search_page') }}" class="page-jump-form">
+                <div class="filter-group">
+                    <label for="jump-page">Go to Page:</label>
+                    <input type="number" name="page" id="jump-page" min="1" max="{{ total_pages }}" placeholder="Enter page number" required>
+
+                    {% set filtered_args = request.args.copy() %}
+                    {% set _ = filtered_args.pop('page', None) %}
+
+                    <!-- Preserve all filters except 'page' -->
+                    {% for key, value in filtered_args.items() %}
+                        <input type="hidden" name="{{ key }}" value="{{ value }}">
+                    {% endfor %}
+
+                    <button type="submit">Go</button>
+                </div>
+            </form>
+
+            <div class="action-buttons-container">
+                <div class="action-buttons">
+                    <button type="button" onclick="refreshLogs()">Refresh/Load Latest Data</button>
+                </div>
+            </div>
+
+            <!-- Pagination Buttons -->
             <div class="pagination">
-                <a href="{{ url_for('search.search_page', page=1, **filters) }}">
+                {% set filtered_args = request.args.copy() %}
+                {% set _ = filtered_args.pop('page', None) %}
+
+                <!-- First Page -->
+                <a href="{{ url_for('search.search_page', page=1, **filtered_args) }}">
                     <button>««</button>
                 </a>
-                <a href="{{ url_for('search.search_page', page=page-1 if page > 1 else 1, **filters) }}">
+
+                <!-- Previous Page -->
+                <a href="{{ url_for('search.search_page', page=(page-1 if page > 1 else 1), **filtered_args) }}">
                     <button>«</button>
                 </a>
 
                 <span class="current-page">Page {{ page }} of {{ total_pages }}</span>
 
-                <a href="{{ url_for('search.search_page', page=page+1 if page < total_pages else total_pages, **filters) }}">
+                <!-- Next Page -->
+                <a href="{{ url_for('search.search_page', page=(page+1 if page < total_pages else total_pages), **filtered_args) }}">
                     <button>»</button>
                 </a>
-                <a href="{{ url_for('search.search_page', page=total_pages, **filters) }}">
+
+                <!-- Last Page -->
+                <a href="{{ url_for('search.search_page', page=total_pages, **filtered_args) }}">
                     <button>»»</button>
                 </a>
             </div>
@@ -573,59 +607,6 @@
             `;
 
             tableBody.appendChild(row);
-        });
-    }
-
-    function applyFilters() {
-        let searchAllFilter = document.querySelector("[name='search_all']").value.toLowerCase();
-
-        let receivedAtFilter = document.querySelector("[name='received_at']").value.toLowerCase();
-        let deviceIdFilter = document.querySelector("[name='device_id']").value.toLowerCase();
-        let methodFilter = document.querySelector("[name='data_type']").value.toLowerCase();
-        let urlFilter = document.querySelector("[name='url']").value.toLowerCase();
-        let headersFilter = document.querySelector("[name='headers']").value.toLowerCase();
-        let cookiesFilter = document.querySelector("[name='cookies']").value.toLowerCase();
-        let queryParamsFilter = document.querySelector("[name='query_params']").value.toLowerCase();
-        let requestBodyFilter = document.querySelector("[name='request_body']").value.toLowerCase();
-        let responseBodyFilter = document.querySelector("[name='response_body']").value.toLowerCase();
-
-        let rows = document.querySelectorAll("#logs-table-body tr");
-
-        rows.forEach(row => {
-            let cells = row.getElementsByTagName("td");
-
-            if (cells.length > 0) {
-                let rowData = Array.from(cells).map(cell => cell.textContent.toLowerCase()).join(" "); // Combine all fields in a row
-
-                let receivedAt = cells[0].textContent.toLowerCase();
-                let deviceId = cells[1].textContent.toLowerCase();
-                let method = cells[2].textContent.toLowerCase();
-                let url = cells[3].textContent.toLowerCase();
-                let headers = cells[4].textContent.toLowerCase();
-                let cookies = cells[5].textContent.toLowerCase();
-                let queryParams = cells[6].textContent.toLowerCase();
-                let requestBody = cells[7].textContent.toLowerCase();
-                let responseBody = cells[8].textContent.toLowerCase();
-
-                let matchesSearchAll = searchAllFilter === "" || rowData.includes(searchAllFilter);
-
-                if (
-                    matchesSearchAll &&
-                    (receivedAt.includes(receivedAtFilter) || receivedAtFilter === "") &&
-                    (deviceId.includes(deviceIdFilter) || deviceIdFilter === "") &&
-                    (method.includes(methodFilter) || methodFilter === "") &&
-                    (url.includes(urlFilter) || urlFilter === "") &&
-                    (headers.includes(headersFilter) || headersFilter === "") &&
-                    (cookies.includes(cookiesFilter) || cookiesFilter === "") &&
-                    (queryParams.includes(queryParamsFilter) || queryParamsFilter === "") &&
-                    (requestBody.includes(requestBodyFilter) || requestBodyFilter === "") &&
-                    (responseBody.includes(responseBodyFilter) || responseBodyFilter === "")
-                ) {
-                    row.style.display = "";
-                } else {
-                    row.style.display = "none";
-                }
-            }
         });
     }
 

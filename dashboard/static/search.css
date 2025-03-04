@@ -221,3 +221,32 @@ td:hover .scrollable-content {
     display: flex;
     flex-direction: column;
 }
+
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem; /* spacing between columns */
+  margin-bottom: 1rem;
+}
+
+/* If you have a smaller row of just 2 columns for checkboxes etc. */
+.filters-grid.small-grid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* For the match case & OR checkboxes, so label wraps nicely */
+.checkbox-group {
+  align-items: center;
+}
+
+.filters-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
