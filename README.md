@@ -45,7 +45,7 @@ To capture traffic from a victim's machine, the victim application must be confi
 
 ### **Windows Automatic Startup**
 1. Open **Run** (`Win + R`), type `shell:startup`, and press **Enter**.
-2. Copy `startup.bat` and `hidden_startup.vbs` to the startup folder to ensure the victim application starts on boot.
+2. Copy `startup.bat` to the startup folder to ensure the victim application starts on boot.
 
 ### **Linux Automatic Startup**
 1. Copy `mitm_startup.sh` to the appropriate startup directory.
